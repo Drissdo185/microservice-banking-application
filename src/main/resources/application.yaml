@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: account
+  security:
+    user:
+      name: admin
+      password: admin123
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:2345/postgres
+    username: postgres
+    password: admin123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
