@@ -15,5 +15,6 @@ public class AccountsConstant {
     public static final String STATUS_500_MSG = "Request processing failed";
     public static final String STATUS_201 = "201";
     public static final String STATUS_201_MSG = "Account created successfully";
+    public static final String ADDRESS = "HCM city";
 
 }
