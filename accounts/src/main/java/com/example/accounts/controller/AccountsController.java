@@ -52,4 +52,14 @@ public class AccountsController {
         }
     }
 
+    @DeleteMapping("/delete")
+    public ResponseEntity<ResponseDto> deleteAccount(@RequestParam String mobileNumber){
+        boolean isDeleted = accountService.deleteAccount(mobileNumber);
+        if(isDeleted){
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseDto(AccountsConstant.STATUS_SUCCESS, AccountsConstant.STATUS_MSG));
+        }else{
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseDto(AccountsConstant.STATUS_FAILED, AccountsConstant.STATUS_FAILED));
+        }
+    }
+
 }
