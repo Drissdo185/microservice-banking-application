@@ -3,8 +3,14 @@ package com.example.accounts.controller;
 
 import com.example.accounts.constant.AccountsConstant;
 import com.example.accounts.dto.CustomerDto;
+import com.example.accounts.dto.ErrorResponseDto;
 import com.example.accounts.dto.ResponseDto;
 import com.example.accounts.service.AccountService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -27,6 +33,25 @@ public class AccountsController {
 
     @Autowired
     private AccountService accountService;
+
+    @Operation(
+            summary = "Create Account REST API",
+            description = "REST API to create new Customer &  Account inside EazyBank"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "HTTP Status CREATED"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "HTTP Status Internal Server Error",
+                    content = @Content(
+                            schema = @Schema(implementation = ErrorResponseDto.class)
+                    )
+            )
+    }
+    )
 
 
     @PostMapping("/create")
