@@ -22,20 +22,18 @@ import java.time.LocalDateTime;
 public class BaseEntity {
 
     @CreatedDate
-    @Column(updatable = false)
-    private LocalDateTime createAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     @CreatedBy
-    @Column(updatable = false)
-    private String createBy;
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
 
     @LastModifiedDate
-    @Column(updatable = false)
-    private LocalDateTime updateAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @LastModifiedBy
-    @Column(updatable = false)
-    private String updateBy;
-
-
+    @Column(name = "updated_by")
+    private String updatedBy;
 }

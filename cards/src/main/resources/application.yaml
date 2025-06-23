@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: card
+  security:
+    user:
+      name: admin
+      password: admin123
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/project2_db
+    username: project2_user
+    password: password2
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
