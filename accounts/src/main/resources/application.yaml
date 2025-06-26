@@ -9,12 +9,12 @@ spring:
       password: admin123
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/accounts_db}
-    username: ${SPRING_DATASOURCE_USERNAME:accounts_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:accounts_password}
+    url: jdbc:postgresql://localhost:5432/accounts_db
+    username: accounts_user
+    password: accounts_password
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
