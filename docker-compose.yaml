@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Accounts Service
+  accounts-db:
+    image: postgres:15
+    container_name: accounts-postgres
+    environment:
+      POSTGRES_DB: accounts_db
+      POSTGRES_USER: accounts_user
+      POSTGRES_PASSWORD: accounts_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - accounts_data:/var/lib/postgresql/data
+      - ./init-databases:/docker-entrypoint-initdb.d
+    networks:
+      - bank-network
+
+  # PostgreSQL Database for Cards Service
+  cards-db:
+    image: postgres:15
+    container_name: cards-postgres
+    environment:
+      POSTGRES_DB: cards_db
+      POSTGRES_USER: cards_user
+      POSTGRES_PASSWORD: cards_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - cards_data:/var/lib/postgresql/data
+      - ./init-databases:/docker-entrypoint-initdb.d
+    networks:
+      - bank-network
+
+  # PostgreSQL Database for Loans Service
+  loans-db:
+    image: postgres:15
+    container_name: loans-postgres
+    environment:
+      POSTGRES_DB: loans_db
+      POSTGRES_USER: loans_user
+      POSTGRES_PASSWORD: loans_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - loans_data:/var/lib/postgresql/data
+      - ./init-databases:/docker-entrypoint-initdb.d
+    networks:
+      - bank-network
+
+  # Accounts Microservice
+  accounts-service:
+    build:
+      context: ./accounts
+      dockerfile: Dockerfile
+    container_name: accounts-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://accounts-db:5432/accounts_db
+      SPRING_DATASOURCE_USERNAME: accounts_user
+      SPRING_DATASOURCE_PASSWORD: accounts_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - accounts-db
+    networks:
+      - bank-network
+    restart: unless-stopped
+
+  # Cards Microservice
+  cards-service:
+    build:
+      context: ./cards
+      dockerfile: Dockerfile
+    container_name: cards-service
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://cards-db:5432/cards_db
+      SPRING_DATASOURCE_USERNAME: cards_user
+      SPRING_DATASOURCE_PASSWORD: cards_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - cards-db
+    networks:
+      - bank-network
+    restart: unless-stopped
+
+  # Loans Microservice
+  loans-service:
+    build:
+      context: ./loans
+      dockerfile: Dockerfile
+    container_name: loans-service
+    ports:
+      - "8100:8100"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://loans-db:5432/loans_db
+      SPRING_DATASOURCE_USERNAME: loans_user
+      SPRING_DATASOURCE_PASSWORD: loans_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - loans-db
+    networks:
+      - bank-network
+    restart: unless-stopped
+
+# Define volumes for persistent data storage
+volumes:
+  accounts_data:
+  cards_data:
+  loans_data:
+
+# Define custom network
+networks:
+  bank-network:
+    driver: bridge
