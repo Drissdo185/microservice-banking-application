@@ -18,13 +18,13 @@ public class CustomerDetailsService {
     private AccountService accountService;
 
     public CustomerDetailsDto getCustomerDetails(String mobileNumber) {
-        // Get account details (local call)
+        
         CustomerDto customerDto = accountService.fetchAccount(mobileNumber);
         
         CustomerDetailsDto customerDetailsDto = new CustomerDetailsDto();
         customerDetailsDto.setCustomerDto(customerDto);
 
-        // Get cards details using service discovery
+        
         try {
             CardsDto cardsDto = restTemplate.getForObject(
                 "http://cards/api/v1/cards/fetch?mobileNumber=" + mobileNumber, 
