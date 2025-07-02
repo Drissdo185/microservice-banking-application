@@ -35,7 +35,7 @@ public class CustomerDetailsService {
             System.out.println("Cards service not available for customer: " + mobileNumber);
         }
 
-        // Get loans details using service discovery
+       
         try {
             LoansDto loansDto = restTemplate.getForObject(
                 "http://loans/api/v1/loans/fetch?mobileNumber=" + mobileNumber, 

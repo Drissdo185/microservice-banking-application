@@ -89,7 +89,7 @@ services:
       dockerfile: Dockerfile
     container_name: accounts-service
     ports:
-      - "8080:8080"
+      - "8085:8085"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://accounts-db:5432/accounts_db
       SPRING_DATASOURCE_USERNAME: accounts_user
