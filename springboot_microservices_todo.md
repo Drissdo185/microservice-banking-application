@@ -34,8 +34,6 @@
 - [ ] Add password encryption with BCrypt
 - [ ] Create user profile management endpoints
 - [ ] Add user input validation
-- [ ] Write unit tests for user service
-- [ ] Configure database migrations with Flyway/Liquibase
 
 ## 4. Card Service
 - [ ] Create CreditCard entity
