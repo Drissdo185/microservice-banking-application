@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -58,11 +59,9 @@ public class AuthServiceImpl implements AuthService {
     public void logout(String token) {
         blacklistedTokens.add(token);
     }
-
-
-
-
-
-
+    @Override
+    public Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 
 }
