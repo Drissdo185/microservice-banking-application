@@ -2,21 +2,21 @@ version: '3.8'
 
 services:
   # Eureka Server
-  eureka-server:
-    build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
-    networks:
-      - bank-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+  #  eureka-server:
+  #    build:
+  #      context: ./eureka-server
+  #      dockerfile: Dockerfile
+  #    container_name: eureka-server
+  #    ports:
+  #      - "8761:8761"
+  #    networks:
+  #      - bank-network
+  #    healthcheck:
+  #      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+  #      interval: 30s
+  #      timeout: 10s
+  #      retries: 5
+  #      start_period: 60s
 
   # PostgreSQL Database for Accounts Service
   accounts-db:
@@ -33,12 +33,11 @@ services:
     networks:
       - bank-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cards_user -d cards_db"]
+      test: ["CMD-SHELL", "pg_isready -U accounts_user -d accounts_db"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    
 
   # PostgreSQL Database for Cards Service
   cards-db:
@@ -82,6 +81,28 @@ services:
       retries: 5
       start_period: 30s
 
+  # PostgreSQL Database for User Service
+  user-db:
+    image: postgres:15
+    container_name: user-postgres
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    volumes:
+      - user_data:/var/lib/postgresql/data
+      - ./user-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # Accounts Microservice
   accounts-service:
     build:
@@ -100,8 +121,8 @@ services:
     depends_on:
       accounts-db:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
+    #      eureka-server:
+    #        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -124,8 +145,8 @@ services:
     depends_on:
       cards-db:
         condition: service_healthy
-      eureka-server:
-        condition: service_healthy
+    #      eureka-server:
+    #        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -141,15 +162,41 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://loans-db:5432/loans_db
       SPRING_DATASOURCE_USERNAME: loans_user
-      SPRING_DATASOURCE_PASSWORD: loans_password
+      POSTGRES_PASSWORD: loans_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
       HOSTNAME: loans-service
     depends_on:
       loans-db:
         condition: service_healthy
-      eureka-server:
+    #      eureka-server:
+    #        condition: service_healthy
+    networks:
+      - bank-network
+    restart: unless-stopped
+
+  # User Microservice
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JWT_SECRET: your-secret-key-here-should-be-at-least-256-bits
+      JWT_EXPIRATION: 86400000
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      HOSTNAME: user-service
+    depends_on:
+      user-db:
         condition: service_healthy
+    #      eureka-server:
+    #        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -158,6 +205,7 @@ volumes:
   accounts_data:
   cards_data:
   loans_data:
+  user_data:
 
 networks:
   bank-network:

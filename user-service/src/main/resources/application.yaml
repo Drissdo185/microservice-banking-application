@@ -6,7 +6,7 @@ spring:
     name: user-service
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_service_db
+    url: jdbc:postgresql://localhost:5435/user_service_db
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -24,7 +24,7 @@ spring:
     change-log: classpath:db/changelog/db.changelog-master.xml
     
 jwt:
-  secret: your-secret-key-here-should-be-at-least-256-bits
+  secret: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
   expiration: 86400000 # 24 hours in milliseconds
   
 logging:
