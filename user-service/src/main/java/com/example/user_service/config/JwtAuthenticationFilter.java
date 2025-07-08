@@ -1,5 +1,6 @@
 package com.example.user_service.config;
 
+import com.example.user_service.repository.UserSessionRepository;
 import com.example.user_service.service.AuthService;
 import com.example.user_service.util.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -21,7 +22,7 @@ import java.util.ArrayList;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtUtil jwtUtil;
-    private final AuthService authService;
+    private final UserSessionRepository userSessionRepository;
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
@@ -42,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (authService.validateToken(jwt)) {
+            if (validateToken(jwt)) {
                 UsernamePasswordAuthenticationToken authToken = 
                         new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -51,6 +52,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         filterChain.doFilter(request, response);
+    }
+
+    private boolean validateToken(String token) {
+        try {
+            // Check if token is valid JWT
+            if (!jwtUtil.isValidToken(token)) {
+                return false;
+            }
+
+            // Check if session exists and is not expired
+            return userSessionRepository.findByToken(token)
+                    .map(session -> !session.isExpired())
+                    .orElse(false);
+        } catch (Exception e) {
+            logger.error("Token validation failed", e);
+            return false;
+        }
     }
     
     @Override

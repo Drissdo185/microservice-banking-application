@@ -31,12 +31,6 @@ public class UserProfile {
     @Column(length = 20)
     private String phone;
     
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
-    
-    @Column(columnDefinition = "jsonb")
-    private String preferences;
-    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

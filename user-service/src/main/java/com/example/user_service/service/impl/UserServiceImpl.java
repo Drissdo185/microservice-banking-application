@@ -45,8 +45,6 @@ public class UserServiceImpl implements UserService {
         profile.setFirstName(request.getFirstName());
         profile.setLastName(request.getLastName());
         profile.setPhone(request.getPhone());
-        profile.setAvatarUrl(request.getAvatarUrl());
-        profile.setPreferences(request.getPreferences());
         
         User savedUser = userRepository.save(user);
         return mapToUserProfileDto(savedUser);
@@ -85,8 +83,7 @@ public class UserServiceImpl implements UserService {
             dto.setFirstName(user.getProfile().getFirstName());
             dto.setLastName(user.getProfile().getLastName());
             dto.setPhone(user.getProfile().getPhone());
-            dto.setAvatarUrl(user.getProfile().getAvatarUrl());
-            dto.setPreferences(user.getProfile().getPreferences());
+
         }
         
         return dto;
