@@ -2,6 +2,7 @@ package com.example.card_service.controller;
 
 import com.example.card_service.dto.CardDto;
 import com.example.card_service.service.CardService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,8 +22,18 @@ public class CardController {
     private final CardService cardService;
 
     @PostMapping
-    public ResponseEntity<CardDto> createCard(@Valid @RequestBody CardDto cardDto) {
-        CardDto createdCard = cardService.createCard(cardDto);
+    public ResponseEntity<CardDto> createCard(@Valid @RequestBody CardDto cardDto, 
+                                             HttpServletRequest request,
+                                             @RequestHeader("Authorization") String token) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        cardDto.setUserId(userId);
+        
+        String bearerToken = token.startsWith("Bearer ") ? token.substring(7) : token;
+        CardDto createdCard = cardService.createCard(cardDto, bearerToken);
         return new ResponseEntity<>(createdCard, HttpStatus.CREATED);
     }
 
@@ -38,8 +49,19 @@ public class CardController {
         return ResponseEntity.ok(card);
     }
 
+    @GetMapping("/user")
+    public ResponseEntity<List<CardDto>> getCardsByUserId(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        List<CardDto> cards = cardService.getCardsByUserId(userId);
+        return ResponseEntity.ok(cards);
+    }
+    
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<CardDto>> getCardsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<CardDto>> getCardsByUserIdAdmin(@PathVariable Long userId) {
         List<CardDto> cards = cardService.getCardsByUserId(userId);
         return ResponseEntity.ok(cards);
     }
@@ -104,5 +126,10 @@ public class CardController {
     public ResponseEntity<CardDto> decreaseLimit(@PathVariable Long id, @RequestParam BigDecimal amount) {
         CardDto updatedCard = cardService.decreaseLimit(id, amount);
         return ResponseEntity.ok(updatedCard);
+    }
+    
+    @GetMapping("/health")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Card Service is running");
     }
 }

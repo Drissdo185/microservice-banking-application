@@ -2,6 +2,7 @@ package com.example.user_service.service.impl;
 
 import com.example.user_service.dto.UpdateProfileRequest;
 import com.example.user_service.dto.UserProfileDto;
+import com.example.user_service.dto.UserValidationResponse;
 import com.example.user_service.entity.User;
 import com.example.user_service.entity.UserProfile;
 import com.example.user_service.repository.UserProfileRepository;
@@ -71,6 +72,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         
         return mapToUserProfileDto(user);
+    }
+    
+    @Override
+    public UserValidationResponse validateUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        
+        return new UserValidationResponse(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            true
+        );
     }
     
     private UserProfileDto mapToUserProfileDto(User user) {

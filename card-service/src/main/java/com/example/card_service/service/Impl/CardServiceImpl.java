@@ -1,6 +1,8 @@
 package com.example.card_service.service.Impl;
 
+import com.example.card_service.client.UserServiceClient;
 import com.example.card_service.dto.CardDto;
+import com.example.card_service.dto.UserValidationResponse;
 import com.example.card_service.entity.Card;
 import com.example.card_service.exception.CardNotFoundException;
 import com.example.card_service.exception.InsufficientBalanceException;
@@ -8,6 +10,7 @@ import com.example.card_service.exception.InvalidCardStatusException;
 import com.example.card_service.repository.CardRepository;
 import com.example.card_service.service.CardService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,10 +24,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class
-CardServiceImpl implements CardService {
+@Slf4j
+public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
+    private final UserServiceClient userServiceClient;
 
     @Override
     public CardDto createCard(CardDto cardDto) {
@@ -43,6 +47,44 @@ CardServiceImpl implements CardService {
         
         Card savedCard = cardRepository.save(card);
         return mapToDto(savedCard);
+    }
+
+    @Override
+    public CardDto createCard(CardDto cardDto, String token) {
+        log.debug("Creating card for user: {}", cardDto.getUserId());
+        
+        try {
+            UserValidationResponse userValidation = userServiceClient
+                    .validateUser(cardDto.getUserId(), token)
+                    .block();
+            
+            if (userValidation == null || !userValidation.isActive()) {
+                throw new RuntimeException("User validation failed");
+            }
+            
+            log.debug("User validation successful for user: {}", cardDto.getUserId());
+            
+            Card card = mapToEntity(cardDto);
+            card.setCreatedAt(LocalDateTime.now());
+            card.setUpdatedAt(LocalDateTime.now());
+            card.setCardStatus("ACTIVE");
+            
+            if (card.getCurrentBalance() == null) {
+                card.setCurrentBalance(BigDecimal.ZERO);
+            }
+            
+            if (card.getAvailableBalance() == null) {
+                card.setAvailableBalance(card.getCreditLimit());
+            }
+            
+            Card savedCard = cardRepository.save(card);
+            log.debug("Card created successfully with ID: {}", savedCard.getId());
+            return mapToDto(savedCard);
+            
+        } catch (Exception e) {
+            log.error("Error creating card for user {}: {}", cardDto.getUserId(), e.getMessage());
+            throw new RuntimeException("Failed to create card: " + e.getMessage(), e);
+        }
     }
 
     @Override

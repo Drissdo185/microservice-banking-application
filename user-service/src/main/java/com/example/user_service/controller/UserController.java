@@ -2,6 +2,7 @@ package com.example.user_service.controller;
 
 import com.example.user_service.dto.UpdateProfileRequest;
 import com.example.user_service.dto.UserProfileDto;
+import com.example.user_service.dto.UserValidationResponse;
 import com.example.user_service.service.AuthService;
 import com.example.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -65,5 +66,11 @@ public class UserController {
         Long userId = authService.getUserIdFromToken(token);
         userService.deleteUser(userId);
         return ResponseEntity.ok("User deleted successfully");
+    }
+    
+    @GetMapping("/internal/validate/{userId}")
+    public ResponseEntity<UserValidationResponse> validateUser(@PathVariable Long userId) {
+        UserValidationResponse response = userService.validateUser(userId);
+        return ResponseEntity.ok(response);
     }
 }

@@ -7,10 +7,11 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.util.List;
 
-public interface
-CardService {
+public interface CardService {
     
     CardDto createCard(CardDto cardDto);
+    
+    CardDto createCard(CardDto cardDto, String token);
     
     CardDto getCardById(Long id);
     

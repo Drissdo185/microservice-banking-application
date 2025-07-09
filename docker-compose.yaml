@@ -128,23 +128,28 @@ services:
     restart: unless-stopped
 
   # Cards Microservice
-  cards-service:
+  card-service:
     build:
-      context: ./cards
+      context: ./card-service
       dockerfile: Dockerfile
-    container_name: cards-service
+    container_name: card-service
     ports:
-      - "8090:8090"
+      - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://cards-db:5432/cards_db
       SPRING_DATASOURCE_USERNAME: cards_user
       SPRING_DATASOURCE_PASSWORD: cards_password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      JWT_SECRET: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+      JWT_EXPIRATION: 86400000
+      USER_SERVICE_URL: http://user-service:8081
       EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      HOSTNAME: cards-service
+      HOSTNAME: card-service
     depends_on:
       cards-db:
         condition: service_healthy
+      user-service:
+        condition: service_started
     #      eureka-server:
     #        condition: service_healthy
     networks:
