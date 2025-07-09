@@ -27,13 +27,13 @@
 - [ ] Configure validation annotations
 
 ## 3. User Service
-- [ ] Create User entity with JPA
-- [ ] Implement UserRepository with Spring Data JPA
-- [ ] Create authentication endpoints (register, login)
-- [ ] Implement JWT token generation and validation
-- [ ] Add password encryption with BCrypt
-- [ ] Create user profile management endpoints
-- [ ] Add user input validation
+- [x] Create User entity with JPA
+- [x] Implement UserRepository with Spring Data JPA
+- [x] Create authentication endpoints (register, login)
+- [x] Implement JWT token generation and validation
+- [x] Add password encryption with BCrypt
+- [x] Create user profile management endpoints
+- [x] Add user input validation
 
 ## 4. Card Service
 - [ ] Create CreditCard entity
