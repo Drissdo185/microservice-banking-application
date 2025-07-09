@@ -1,0 +1,301 @@
+{
+  "createCardRequests": [
+    {
+      "description": "Create Credit Card for User 1001",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 12,
+        "expiryYear": 2026,
+        "cardType": "CREDIT",
+        "creditLimit": 5000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    },
+    {
+      "description": "Create Debit Card for User 1001",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "2345678901234567",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 8,
+        "expiryYear": 2025,
+        "cardType": "DEBIT",
+        "creditLimit": 2000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 2000.00
+      }
+    },
+    {
+      "description": "Create Credit Card for User 1002",
+      "data": {
+        "userId": 1002,
+        "cardNumber": "3456789012345678",
+        "cardHolderName": "Jane Smith",
+        "expiryMonth": 3,
+        "expiryYear": 2027,
+        "cardType": "CREDIT",
+        "creditLimit": 10000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 10000.00
+      }
+    },
+    {
+      "description": "Create Debit Card for User 1003",
+      "data": {
+        "userId": 1003,
+        "cardNumber": "4567890123456789",
+        "cardHolderName": "Bob Johnson",
+        "expiryMonth": 6,
+        "expiryYear": 2025,
+        "cardType": "DEBIT",
+        "creditLimit": 3000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 3000.00
+      }
+    },
+    {
+      "description": "Create Premium Credit Card for User 1004",
+      "data": {
+        "userId": 1004,
+        "cardNumber": "5678901234567890",
+        "cardHolderName": "Alice Wilson",
+        "expiryMonth": 11,
+        "expiryYear": 2028,
+        "cardType": "CREDIT",
+        "creditLimit": 15000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 15000.00
+      }
+    }
+  ],
+  "updateCardRequests": [
+    {
+      "description": "Update Card Holder Name",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Updated Doe",
+        "expiryMonth": 12,
+        "expiryYear": 2026,
+        "cardType": "CREDIT",
+        "creditLimit": 5000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    },
+    {
+      "description": "Update Credit Limit",
+      "data": {
+        "userId": 1002,
+        "cardNumber": "3456789012345678",
+        "cardHolderName": "Jane Smith",
+        "expiryMonth": 3,
+        "expiryYear": 2027,
+        "cardType": "CREDIT",
+        "creditLimit": 12000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 12000.00
+      }
+    }
+  ],
+  "balanceUpdateRequests": [
+    {
+      "description": "Debit 100.00 from card",
+      "cardId": 1,
+      "amount": 100.00,
+      "operation": "DEBIT"
+    },
+    {
+      "description": "Credit 50.00 to card",
+      "cardId": 1,
+      "amount": 50.00,
+      "operation": "CREDIT"
+    },
+    {
+      "description": "Debit 250.00 from card",
+      "cardId": 2,
+      "amount": 250.00,
+      "operation": "DEBIT"
+    },
+    {
+      "description": "Large debit transaction",
+      "cardId": 3,
+      "amount": 1500.00,
+      "operation": "DEBIT"
+    }
+  ],
+  "creditLimitRequests": [
+    {
+      "description": "Increase limit by 1000.00",
+      "cardId": 1,
+      "amount": 1000.00
+    },
+    {
+      "description": "Decrease limit by 500.00",
+      "cardId": 2,
+      "amount": 500.00
+    },
+    {
+      "description": "Increase limit by 2000.00",
+      "cardId": 3,
+      "amount": 2000.00
+    }
+  ],
+  "statusUpdateRequests": [
+    {
+      "description": "Block card",
+      "cardId": 1,
+      "status": "BLOCKED"
+    },
+    {
+      "description": "Activate card",
+      "cardId": 1,
+      "status": "ACTIVE"
+    },
+    {
+      "description": "Mark card as expired",
+      "cardId": 2,
+      "status": "EXPIRED"
+    }
+  ],
+  "testScenarios": [
+    {
+      "scenario": "Valid Card Creation",
+      "steps": [
+        "1. POST /api/cards with createCardRequests[0].data",
+        "2. Verify response status 201",
+        "3. Verify card is created with correct details"
+      ]
+    },
+    {
+      "scenario": "Invalid Card Creation - Missing Required Fields",
+      "steps": [
+        "1. POST /api/cards with empty userId",
+        "2. Verify response status 400",
+        "3. Verify validation error messages"
+      ]
+    },
+    {
+      "scenario": "Balance Update - Debit Operation",
+      "steps": [
+        "1. Create a card first",
+        "2. PATCH /api/cards/{id}/balance?amount=100.00&operation=DEBIT",
+        "3. Verify balance is updated correctly"
+      ]
+    },
+    {
+      "scenario": "Balance Update - Insufficient Balance",
+      "steps": [
+        "1. Create a card with low limit",
+        "2. PATCH /api/cards/{id}/balance?amount=10000.00&operation=DEBIT",
+        "3. Verify response status 400",
+        "4. Verify error message about insufficient balance"
+      ]
+    },
+    {
+      "scenario": "Card Status Management",
+      "steps": [
+        "1. Create a card",
+        "2. PATCH /api/cards/{id}/block",
+        "3. Verify card status is BLOCKED",
+        "4. PATCH /api/cards/{id}/unblock",
+        "5. Verify card status is ACTIVE"
+      ]
+    },
+    {
+      "scenario": "Get Cards by User",
+      "steps": [
+        "1. Create multiple cards for same user",
+        "2. GET /api/cards/user/{userId}",
+        "3. Verify all cards for user are returned"
+      ]
+    },
+    {
+      "scenario": "Pagination Test",
+      "steps": [
+        "1. Create multiple cards",
+        "2. GET /api/cards?page=0&size=2",
+        "3. Verify pagination works correctly"
+      ]
+    },
+    {
+      "scenario": "Card Not Found Error",
+      "steps": [
+        "1. GET /api/cards/99999",
+        "2. Verify response status 404",
+        "3. Verify error message about card not found"
+      ]
+    },
+    {
+      "scenario": "Credit Limit Management",
+      "steps": [
+        "1. Create a card",
+        "2. PATCH /api/cards/{id}/increase-limit?amount=1000.00",
+        "3. Verify credit limit increased",
+        "4. PATCH /api/cards/{id}/decrease-limit?amount=500.00",
+        "5. Verify credit limit decreased"
+      ]
+    }
+  ],
+  "errorTestCases": [
+    {
+      "description": "Invalid card type",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 12,
+        "expiryYear": 2026,
+        "cardType": "INVALID_TYPE",
+        "creditLimit": 5000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    },
+    {
+      "description": "Invalid expiry month",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 13,
+        "expiryYear": 2026,
+        "cardType": "CREDIT",
+        "creditLimit": 5000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    },
+    {
+      "description": "Negative credit limit",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 12,
+        "expiryYear": 2026,
+        "cardType": "CREDIT",
+        "creditLimit": -1000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    },
+    {
+      "description": "Past expiry year",
+      "data": {
+        "userId": 1001,
+        "cardNumber": "1234567890123456",
+        "cardHolderName": "John Doe",
+        "expiryMonth": 12,
+        "expiryYear": 2020,
+        "cardType": "CREDIT",
+        "creditLimit": 5000.00,
+        "currentBalance": 0.00,
+        "availableBalance": 5000.00
+      }
+    }
+  ]
+}

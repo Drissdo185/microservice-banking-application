@@ -7,9 +7,9 @@ spring:
 
 
   datasource:
-    url: jdbc:postgresql://localhost:5436/card_service_db
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5433/cards_db
+    username: cards_user
+    password: cards_password
     driver-class-name: org.postgresql.Driver
 
   jpa:

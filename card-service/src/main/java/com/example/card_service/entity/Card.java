@@ -1,5 +1,6 @@
 package com.example.card_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -69,10 +70,12 @@ public class Card {
     private BigDecimal availableBalance;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
