@@ -26,7 +26,7 @@ public class UserServiceClientImpl implements UserServiceClient {
     @Override
     public Mono<UserValidationResponse> validateUser(String token) {
         return webClient.get()
-                .uri(userServiceUrl + "/api/auth/validate")
+                .uri(userServiceUrl + "/api/users/internal/validate")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals, response -> {
@@ -37,15 +37,7 @@ public class UserServiceClientImpl implements UserServiceClient {
                     log.error("Unauthorized token during validation");
                     return Mono.error(new RuntimeException("Unauthorized"));
                 })
-                .bodyToMono(Boolean.class)
-                .flatMap(isValid -> {
-                    if (isValid) {
-                        // If token is valid, get user profile
-                        return getUserProfile(token);
-                    } else {
-                        return Mono.error(new RuntimeException("Invalid token"));
-                    }
-                })
+                .bodyToMono(UserValidationResponse.class)
                 .timeout(Duration.ofSeconds(5))
                 .doOnSuccess(user -> log.debug("User validation successful for ID: {}", user.getId()))
                 .doOnError(error -> {
@@ -60,23 +52,6 @@ public class UserServiceClientImpl implements UserServiceClient {
                 .onErrorResume(error -> {
                     log.error("User service unavailable for user validation: {}", error.getMessage());
                     return Mono.error(new RuntimeException("User service unavailable"));
-                });
-    }
-
-    private Mono<UserValidationResponse> getUserProfile(String token) {
-        return webClient.get()
-                .uri(userServiceUrl + "/api/users/profile")
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(UserValidationResponse.class)
-                .map(profile -> {
-                    // Convert profile to validation response
-                    return new UserValidationResponse(
-                            profile.getId(),
-                            profile.getUsername(),
-                            profile.getEmail(),
-                            true
-                    );
                 });
     }
 }

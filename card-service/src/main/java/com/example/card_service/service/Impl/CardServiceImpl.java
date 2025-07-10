@@ -54,45 +54,52 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public CardDto createCard(CardDto cardDto, String token) {
-
-        
         try {
+            log.debug("Creating card for token: {}", token);
+
+            // Validate user and get user information
             UserValidationResponse userValidation = userServiceClient
                     .validateUser(token)
                     .block();
-            
-            if (userValidation == null || !userValidation.isActive()) {
-                throw new RuntimeException("User validation failed");
+
+            if (userValidation == null) {
+                log.error("User validation returned null");
+                throw new RuntimeException("User validation failed - no response from user service");
             }
 
-            String cardNum = generateRandomCardNumber();
+            if (!userValidation.isActive()) {
+                log.error("User is not active: {}", userValidation.getId());
+                throw new RuntimeException("User account is not active");
+            }
 
-            
+            log.debug("User validation successful for userId: {}", userValidation.getId());
+
+            // Generate unique card number
+            String cardNum = generateUniqueCardNumber();
+
+            // Create card entity
             Card card = mapToEntity(cardDto);
             card.setUserId(userValidation.getId());
-
-            if(cardRepository.findByCardNumber(cardNum).isPresent()) {
-                throw new RuntimeException("Card number already exists");
-            }else{
-                card.setCardNumber(cardNum);
-            }
+            card.setCardNumber(cardNum);
             card.setCreatedAt(LocalDateTime.now());
             card.setUpdatedAt(LocalDateTime.now());
             card.setCardStatus("ACTIVE");
-            
+
             if (card.getCurrentBalance() == null) {
                 card.setCurrentBalance(BigDecimal.ZERO);
             }
-            
+
             if (card.getAvailableBalance() == null) {
                 card.setAvailableBalance(card.getCreditLimit());
             }
-            
+
             Card savedCard = cardRepository.save(card);
-            log.debug("Card created successfully with ID: {}", savedCard.getId());
+            log.debug("Card created successfully with ID: {} for user: {}",
+                    savedCard.getId(), savedCard.getUserId());
             return mapToDto(savedCard);
-            
+
         } catch (Exception e) {
+            log.error("Failed to create card", e);
             throw new RuntimeException("Failed to create card: " + e.getMessage(), e);
         }
     }
@@ -313,6 +320,20 @@ public class CardServiceImpl implements CardService {
         }
 
         return cardNumber.toString();
+    }
+
+    private String generateUniqueCardNumber() {
+        String cardNumber;
+        int attempts = 0;
+        do {
+            cardNumber = generateRandomCardNumber();
+            attempts++;
+            if (attempts > 10) {
+                throw new RuntimeException("Unable to generate unique card number after 10 attempts");
+            }
+        } while (cardRepository.findByCardNumber(cardNumber).isPresent());
+
+        return cardNumber;
     }
 
 }
