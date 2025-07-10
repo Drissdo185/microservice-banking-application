@@ -271,6 +271,8 @@ public class CardServiceImpl implements CardService {
 
     private Card mapToEntity(CardDto cardDto) {
         Card card = new Card();
+        card.setUserId(cardDto.getUserId());
+        card.setCardNumber(cardDto.getCardNumber());
         card.setCardHolderName(cardDto.getCardHolderName());
         card.setExpiryMonth(cardDto.getExpiryMonth());
         card.setExpiryYear(cardDto.getExpiryYear());
@@ -286,6 +288,9 @@ public class CardServiceImpl implements CardService {
 
     private CardDto mapToDto(Card card) {
         CardDto cardDto = new CardDto();
+        cardDto.setId(card.getId());
+        cardDto.setUserId(card.getUserId());
+        cardDto.setCardNumber(card.getCardNumber());
         cardDto.setCardHolderName(card.getCardHolderName());
         cardDto.setExpiryMonth(card.getExpiryMonth());
         cardDto.setExpiryYear(card.getExpiryYear());

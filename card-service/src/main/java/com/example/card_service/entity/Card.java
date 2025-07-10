@@ -21,13 +21,13 @@ public class Card {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @NotNull
+
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Size(max = 19)
-    @NotNull
-    @Column(name = "card_number", nullable = false, length = 19)
+
+
+    @Column(name = "card_number", nullable = false)
     private String cardNumber;
 
     @Size(max = 100)

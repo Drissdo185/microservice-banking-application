@@ -13,7 +13,7 @@ public class UserValidationResponse {
     private String email;
     private boolean isActive;
 
-    // Additional fields from user profile
+
     private String firstName;
     private String lastName;
     private String phone;
