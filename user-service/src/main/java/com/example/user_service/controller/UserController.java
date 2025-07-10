@@ -67,9 +67,20 @@ public class UserController {
         userService.deleteUser(userId);
         return ResponseEntity.ok("User deleted successfully");
     }
-    
+
     @GetMapping("/internal/validate/{userId}")
-    public ResponseEntity<UserValidationResponse> validateUser(@PathVariable Long userId) {
+    public ResponseEntity<UserValidationResponse> validateUserById(@PathVariable Long userId) {
+        UserValidationResponse response = userService.validateUser(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/internal/validate")
+    public ResponseEntity<UserValidationResponse> validateUser(@RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        Long userId = authService.getUserIdFromToken(token);
         UserValidationResponse response = userService.validateUser(userId);
         return ResponseEntity.ok(response);
     }

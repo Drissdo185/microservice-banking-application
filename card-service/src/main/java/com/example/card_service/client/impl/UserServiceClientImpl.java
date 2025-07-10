@@ -19,40 +19,64 @@ import java.time.Duration;
 public class UserServiceClientImpl implements UserServiceClient {
 
     private final WebClient webClient;
-    
+
     @Value("${user-service.url}")
     private String userServiceUrl;
 
     @Override
     public Mono<UserValidationResponse> validateUser(String token) {
-
-        
         return webClient.get()
-                .uri(userServiceUrl + "/api/users/internal/validate/")
+                .uri(userServiceUrl + "/api/auth/validate")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals, response -> {
+                    log.error("User not found during validation");
                     return Mono.error(new RuntimeException("User not found"));
                 })
                 .onStatus(HttpStatus.UNAUTHORIZED::equals, response -> {
-
+                    log.error("Unauthorized token during validation");
                     return Mono.error(new RuntimeException("Unauthorized"));
                 })
-                .bodyToMono(UserValidationResponse.class)
+                .bodyToMono(Boolean.class)
+                .flatMap(isValid -> {
+                    if (isValid) {
+                        // If token is valid, get user profile
+                        return getUserProfile(token);
+                    } else {
+                        return Mono.error(new RuntimeException("Invalid token"));
+                    }
+                })
                 .timeout(Duration.ofSeconds(5))
-                .doOnSuccess(user -> log.debug("User validation successful for ID: {}"))
+                .doOnSuccess(user -> log.debug("User validation successful for ID: {}", user.getId()))
                 .doOnError(error -> {
                     if (error instanceof WebClientResponseException) {
                         WebClientResponseException webClientError = (WebClientResponseException) error;
-                        log.error("Error validating user {}: HTTP {} - {}",
+                        log.error("Error validating user: HTTP {} - {}",
                                 webClientError.getStatusCode(), webClientError.getResponseBodyAsString());
                     } else {
-                        log.error("Error validating user {}: {}", error.getMessage());
+                        log.error("Error validating user: {}", error.getMessage());
                     }
                 })
                 .onErrorResume(error -> {
                     log.error("User service unavailable for user validation: {}", error.getMessage());
                     return Mono.error(new RuntimeException("User service unavailable"));
+                });
+    }
+
+    private Mono<UserValidationResponse> getUserProfile(String token) {
+        return webClient.get()
+                .uri(userServiceUrl + "/api/users/profile")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(UserValidationResponse.class)
+                .map(profile -> {
+                    // Convert profile to validation response
+                    return new UserValidationResponse(
+                            profile.getId(),
+                            profile.getUsername(),
+                            profile.getEmail(),
+                            true
+                    );
                 });
     }
 }

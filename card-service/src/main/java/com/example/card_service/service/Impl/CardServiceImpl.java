@@ -71,7 +71,7 @@ public class CardServiceImpl implements CardService {
             Card card = mapToEntity(cardDto);
             card.setUserId(userValidation.getId());
 
-            if(cardRepository.findByCardNumber(cardNum) != null) {
+            if(cardRepository.findByCardNumber(cardNum).isPresent()) {
                 throw new RuntimeException("Card number already exists");
             }else{
                 card.setCardNumber(cardNum);

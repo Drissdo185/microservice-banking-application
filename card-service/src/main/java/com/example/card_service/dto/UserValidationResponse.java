@@ -12,4 +12,16 @@ public class UserValidationResponse {
     private String username;
     private String email;
     private boolean isActive;
+
+    // Additional fields from user profile
+    private String firstName;
+    private String lastName;
+    private String phone;
+
+    public UserValidationResponse(Long id, String username, String email, boolean isActive) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.isActive = isActive;
+    }
 }
