@@ -2,21 +2,40 @@ version: '3.8'
 
 services:
   # Eureka Server
-  #  eureka-server:
-  #    build:
-  #      context: ./eureka-server
-  #      dockerfile: Dockerfile
-  #    container_name: eureka-server
-  #    ports:
-  #      - "8761:8761"
-  #    networks:
-  #      - bank-network
-  #    healthcheck:
-  #      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
-  #      interval: 30s
-  #      timeout: 10s
-  #      retries: 5
-  #      start_period: 60s
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - bank-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      JWT_SECRET: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+      HOSTNAME: api-gateway
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - bank-network
+    restart: unless-stopped
 
   # PostgreSQL Database for Accounts Service
   accounts-db:
@@ -121,8 +140,8 @@ services:
     depends_on:
       accounts-db:
         condition: service_healthy
-    #      eureka-server:
-    #        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -150,8 +169,8 @@ services:
         condition: service_healthy
       user-service:
         condition: service_started
-    #      eureka-server:
-    #        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -174,8 +193,8 @@ services:
     depends_on:
       loans-db:
         condition: service_healthy
-    #      eureka-server:
-    #        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped
@@ -200,8 +219,8 @@ services:
     depends_on:
       user-db:
         condition: service_healthy
-    #      eureka-server:
-    #        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     networks:
       - bank-network
     restart: unless-stopped

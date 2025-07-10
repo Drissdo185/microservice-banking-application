@@ -26,7 +26,7 @@ public class UserServiceClientImpl implements UserServiceClient {
     @Override
     public Mono<UserValidationResponse> validateUser(String token) {
         return webClient.get()
-                .uri(userServiceUrl + "/api/users/internal/validate")
+                .uri("http://user-service/api/users/internal/validate")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals, response -> {

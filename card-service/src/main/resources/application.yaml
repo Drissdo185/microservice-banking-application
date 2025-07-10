@@ -7,12 +7,12 @@ spring:
 
 
   datasource:
-#    url: jdbc:postgresql://localhost:5433/cards_db
-#    username: cards_user
-#    password: cards_password
-    url: jdbc:postgresql://localhost:5436/card_service_db
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5433/cards_db
+    username: cards_user
+    password: cards_password
+#    url: jdbc:postgresql://localhost:5436/card_service_db
+#    username: postgres
+#    password: password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -34,3 +34,12 @@ user-service:
 logging:
   level:
     com.example.card_service: DEBUG
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
