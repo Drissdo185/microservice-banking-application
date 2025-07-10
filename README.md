@@ -292,18 +292,3 @@ EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
-
-## 📝 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 📞 Support
-
-For questions and support:
-- Check the individual service CLAUDE.md files
-- Review the API_ENDPOINTS.md in card-service
-- Consult the development todo list in springboot_microservices_todo.md
-
----
-
-**Note**: This is an educational/demonstration project showcasing microservices architecture patterns. For production use, additional security hardening, monitoring, and operational considerations should be implemented.
