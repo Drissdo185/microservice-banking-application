@@ -4,5 +4,5 @@ import com.example.card_service.dto.UserValidationResponse;
 import reactor.core.publisher.Mono;
 
 public interface UserServiceClient {
-    Mono<UserValidationResponse> validateUser(Long userId, String token);
+    Mono<UserValidationResponse> validateUser(String token);
 }

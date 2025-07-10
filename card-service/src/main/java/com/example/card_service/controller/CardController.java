@@ -30,8 +30,6 @@ public class CardController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         
-        cardDto.setUserId(userId);
-        
         String bearerToken = token.startsWith("Bearer ") ? token.substring(7) : token;
         CardDto createdCard = cardService.createCard(cardDto, bearerToken);
         return new ResponseEntity<>(createdCard, HttpStatus.CREATED);

@@ -24,31 +24,30 @@ public class UserServiceClientImpl implements UserServiceClient {
     private String userServiceUrl;
 
     @Override
-    public Mono<UserValidationResponse> validateUser(Long userId, String token) {
-        log.debug("Validating user with ID: {} using User Service", userId);
+    public Mono<UserValidationResponse> validateUser(String token) {
+
         
         return webClient.get()
-                .uri(userServiceUrl + "/api/users/internal/validate/" + userId)
+                .uri(userServiceUrl + "/api/users/internal/validate/")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals, response -> {
-                    log.warn("User with ID {} not found", userId);
                     return Mono.error(new RuntimeException("User not found"));
                 })
                 .onStatus(HttpStatus.UNAUTHORIZED::equals, response -> {
-                    log.warn("Unauthorized access when validating user {}", userId);
+
                     return Mono.error(new RuntimeException("Unauthorized"));
                 })
                 .bodyToMono(UserValidationResponse.class)
                 .timeout(Duration.ofSeconds(5))
-                .doOnSuccess(user -> log.debug("User validation successful for ID: {}", userId))
+                .doOnSuccess(user -> log.debug("User validation successful for ID: {}"))
                 .doOnError(error -> {
                     if (error instanceof WebClientResponseException) {
                         WebClientResponseException webClientError = (WebClientResponseException) error;
-                        log.error("Error validating user {}: HTTP {} - {}", 
-                                userId, webClientError.getStatusCode(), webClientError.getResponseBodyAsString());
+                        log.error("Error validating user {}: HTTP {} - {}",
+                                webClientError.getStatusCode(), webClientError.getResponseBodyAsString());
                     } else {
-                        log.error("Error validating user {}: {}", userId, error.getMessage());
+                        log.error("Error validating user {}: {}", error.getMessage());
                     }
                 })
                 .onErrorResume(error -> {

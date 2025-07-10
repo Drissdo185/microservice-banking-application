@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CardServiceImpl implements CardService {
 
+    private final Random random = new SecureRandom();
     private final CardRepository cardRepository;
     private final UserServiceClient userServiceClient;
 
@@ -51,20 +54,28 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public CardDto createCard(CardDto cardDto, String token) {
-        log.debug("Creating card for user: {}", cardDto.getUserId());
+
         
         try {
             UserValidationResponse userValidation = userServiceClient
-                    .validateUser(cardDto.getUserId(), token)
+                    .validateUser(token)
                     .block();
             
             if (userValidation == null || !userValidation.isActive()) {
                 throw new RuntimeException("User validation failed");
             }
-            
-            log.debug("User validation successful for user: {}", cardDto.getUserId());
+
+            String cardNum = generateRandomCardNumber();
+
             
             Card card = mapToEntity(cardDto);
+            card.setUserId(userValidation.getId());
+
+            if(cardRepository.findByCardNumber(cardNum) != null) {
+                throw new RuntimeException("Card number already exists");
+            }else{
+                card.setCardNumber(cardNum);
+            }
             card.setCreatedAt(LocalDateTime.now());
             card.setUpdatedAt(LocalDateTime.now());
             card.setCardStatus("ACTIVE");
@@ -82,7 +93,6 @@ public class CardServiceImpl implements CardService {
             return mapToDto(savedCard);
             
         } catch (Exception e) {
-            log.error("Error creating card for user {}: {}", cardDto.getUserId(), e.getMessage());
             throw new RuntimeException("Failed to create card: " + e.getMessage(), e);
         }
     }
@@ -261,9 +271,6 @@ public class CardServiceImpl implements CardService {
 
     private Card mapToEntity(CardDto cardDto) {
         Card card = new Card();
-        card.setId(cardDto.getId());
-        card.setUserId(cardDto.getUserId());
-        card.setCardNumber(cardDto.getCardNumber());
         card.setCardHolderName(cardDto.getCardHolderName());
         card.setExpiryMonth(cardDto.getExpiryMonth());
         card.setExpiryYear(cardDto.getExpiryYear());
@@ -279,9 +286,6 @@ public class CardServiceImpl implements CardService {
 
     private CardDto mapToDto(Card card) {
         CardDto cardDto = new CardDto();
-        cardDto.setId(card.getId());
-        cardDto.setUserId(card.getUserId());
-        cardDto.setCardNumber(card.getCardNumber());
         cardDto.setCardHolderName(card.getCardHolderName());
         cardDto.setExpiryMonth(card.getExpiryMonth());
         cardDto.setExpiryYear(card.getExpiryYear());
@@ -294,4 +298,16 @@ public class CardServiceImpl implements CardService {
         cardDto.setUpdatedAt(card.getUpdatedAt());
         return cardDto;
     }
+
+    private String generateRandomCardNumber() {
+        StringBuilder cardNumber = new StringBuilder();
+
+
+        for (int i = 1; i < 10; i++) {
+            cardNumber.append(random.nextInt(10));
+        }
+
+        return cardNumber.toString();
+    }
+
 }

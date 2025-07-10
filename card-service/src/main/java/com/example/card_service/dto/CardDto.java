@@ -10,14 +10,6 @@ import java.time.LocalDateTime;
 @Data
 public class CardDto {
 
-    private Long id;
-
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
-    @NotBlank(message = "Card number is required")
-    @Size(max = 19, message = "Card number must not exceed 19 characters")
-    private String cardNumber;
 
     @NotBlank(message = "Card holder name is required")
     @Size(max = 100, message = "Card holder name must not exceed 100 characters")
