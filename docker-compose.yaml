@@ -1,54 +1,19 @@
 version: '3.8'
 
 services:
-  # Eureka Server
-  eureka-server:
-    build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
-    container_name: eureka-server
-    ports:
-      - "8761:8761"
-    networks:
-      - bank-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
-  # API Gateway
-  api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      JWT_SECRET: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
-      HOSTNAME: api-gateway
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - bank-network
-    restart: unless-stopped
-
   # PostgreSQL Database for Accounts Service
   accounts-db:
     image: postgres:15
     container_name: accounts-postgres
     environment:
-      POSTGRES_DB: accounts_db
-      POSTGRES_USER: accounts_user
-      POSTGRES_PASSWORD: accounts_password
+      POSTGRES_DB: accounts_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
     volumes:
       - accounts_data:/var/lib/postgresql/data
+      - ./account-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - bank-network
     healthcheck:
@@ -63,13 +28,14 @@ services:
     image: postgres:15
     container_name: cards-postgres
     environment:
-      POSTGRES_DB: cards_db
-      POSTGRES_USER: cards_user
-      POSTGRES_PASSWORD: cards_password
+      POSTGRES_DB: card_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
       - "5433:5432"
     volumes:
       - cards_data:/var/lib/postgresql/data
+      - ./card-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - bank-network
     healthcheck:
@@ -84,9 +50,9 @@ services:
     image: postgres:15
     container_name: loans-postgres
     environment:
-      POSTGRES_DB: loans_db
-      POSTGRES_USER: loans_user
-      POSTGRES_PASSWORD: loans_password
+      POSTGRES_DB: loan_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
       - "5434:5432"
     volumes:
@@ -122,114 +88,55 @@ services:
       retries: 5
       start_period: 30s
 
-  # Accounts Microservice
-  accounts-service:
-    build:
-      context: ./accounts
-      dockerfile: Dockerfile
-    container_name: accounts-service
-    ports:
-      - "8085:8085"
+  # PostgreSQL Database for Transaction Service
+  transactions-db:
+    image: postgres:15
+    container_name: transactions-postgres
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://accounts-db:5432/accounts_db
-      SPRING_DATASOURCE_USERNAME: accounts_user
-      SPRING_DATASOURCE_PASSWORD: accounts_password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      HOSTNAME: accounts-service
-    depends_on:
-      accounts-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
+      POSTGRES_DB: transactions_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5436:5432"
+    volumes:
+      - transactions_data:/var/lib/postgresql/data
     networks:
       - bank-network
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U transactions_user -d transactions_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Cards Microservice
-  card-service:
-    build:
-      context: ./card-service
-      dockerfile: Dockerfile
-    container_name: card-service
-    ports:
-      - "8082:8082"
+  # PostgreSQL Database for Analytics Service
+  analytics-db:
+    image: postgres:15
+    container_name: analytics-postgres
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://cards-db:5432/cards_db
-      SPRING_DATASOURCE_USERNAME: cards_user
-      SPRING_DATASOURCE_PASSWORD: cards_password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      JWT_SECRET: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
-      JWT_EXPIRATION: 86400000
-      USER_SERVICE_URL: http://user-service:8081
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      HOSTNAME: card-service
-    depends_on:
-      cards-db:
-        condition: service_healthy
-      user-service:
-        condition: service_started
-      eureka-server:
-        condition: service_healthy
+      POSTGRES_DB: analytics_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5437:5432"
+    volumes:
+      - analytics_data:/var/lib/postgresql/data
     networks:
       - bank-network
-    restart: unless-stopped
-
-  # Loans Microservice
-  loans-service:
-    build:
-      context: ./loans
-      dockerfile: Dockerfile
-    container_name: loans-service
-    ports:
-      - "8100:8100"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://loans-db:5432/loans_db
-      SPRING_DATASOURCE_USERNAME: loans_user
-      POSTGRES_PASSWORD: loans_password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      HOSTNAME: loans-service
-    depends_on:
-      loans-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - bank-network
-    restart: unless-stopped
-
-  # User Microservice
-  user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
-    container_name: user-service
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_service_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      JWT_SECRET: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
-      JWT_EXPIRATION: 86400000
-      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
-      HOSTNAME: user-service
-    depends_on:
-      user-db:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - bank-network
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d analytics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   accounts_data:
   cards_data:
   loans_data:
   user_data:
+  transactions_data:
+  analytics_data:
 
 networks:
   bank-network:
