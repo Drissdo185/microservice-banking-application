@@ -1,5 +1,5 @@
 server:
-  port: 8100
+  port: 8080
 
 spring:
   application:
@@ -46,8 +46,8 @@ spring:
             - name: JwtAuthenticationFilter
         
         # Loans Service Routes
-        - id: loans-service
-          uri: lb://loans-service
+        - id: loan-service
+          uri: lb://loan-service
           predicates:
             - Path=/api/loans/**
           filters:
