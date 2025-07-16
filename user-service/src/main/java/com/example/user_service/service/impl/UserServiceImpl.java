@@ -10,6 +10,8 @@ import com.example.user_service.repository.UserRepository;
 import com.example.user_service.repository.UserSessionRepository;
 import com.example.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ public class UserServiceImpl implements UserService {
     private final UserSessionRepository userSessionRepository;
     
     @Override
+    @Cacheable(value = "userProfiles", key = "#userId")
     public UserProfileDto getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
     
     @Override
     @Transactional
+    @CacheEvict(value = {"userProfiles", "usersByUsername", "usersByEmail", "userValidations"}, key = "#userId")
     public UserProfileDto updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -53,12 +57,14 @@ public class UserServiceImpl implements UserService {
     
     @Override
     @Transactional
+    @CacheEvict(value = {"userProfiles", "usersByUsername", "usersByEmail", "userValidations"}, key = "#userId")
     public void deleteUser(Long userId) {
         userSessionRepository.deleteByUserId(userId);
         userRepository.deleteById(userId);
     }
     
     @Override
+    @Cacheable(value = "usersByUsername", key = "#username")
     public UserProfileDto getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -67,6 +73,7 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
+    @Cacheable(value = "usersByEmail", key = "#email")
     public UserProfileDto getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -75,6 +82,7 @@ public class UserServiceImpl implements UserService {
     }
     
     @Override
+    @Cacheable(value = "userValidations", key = "#userId")
     public UserValidationResponse validateUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));

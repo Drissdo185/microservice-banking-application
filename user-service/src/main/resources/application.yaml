@@ -23,6 +23,18 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      database: 0
+      jedis:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+    
 jwt:
   secret: e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
   expiration: 86400000 # 24 hours in milliseconds
