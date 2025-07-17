@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface CardService {
     
-    CardDto createCard(CardDto cardDto);
+
     
     CardDto createCard(CardDto cardDto, String token);
     

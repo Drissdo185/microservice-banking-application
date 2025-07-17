@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,4 +48,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     BigDecimal getTotalAvailableBalanceByUserId(@Param("userId") Long userId);
     
     boolean existsByCardNumber(String cardNumber);
+
+    @Query("SELECT c FROM Card c WHERE c.userId = :userId AND c.createdAt > :createdAfter ORDER BY c.createdAt DESC")
+    List<Card> findByUserIdAndCreatedAtAfter(@Param("userId") Long userId, @Param("createdAfter") LocalDateTime createdAfter);
 }

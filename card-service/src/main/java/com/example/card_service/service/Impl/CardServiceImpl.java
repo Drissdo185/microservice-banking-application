@@ -33,29 +33,13 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final UserServiceClient userServiceClient;
 
-    @Override
-    public CardDto createCard(CardDto cardDto) {
-        Card card = mapToEntity(cardDto);
-        card.setCreatedAt(LocalDateTime.now());
-        card.setUpdatedAt(LocalDateTime.now());
-        card.setCardStatus("ACTIVE");
-        
-        if (card.getCurrentBalance() == null) {
-            card.setCurrentBalance(BigDecimal.ZERO);
-        }
-        
-        if (card.getAvailableBalance() == null) {
-            card.setAvailableBalance(card.getCreditLimit());
-        }
-        
-        Card savedCard = cardRepository.save(card);
-        return mapToDto(savedCard);
-    }
 
     @Override
+    @Transactional
     public CardDto createCard(CardDto cardDto, String token) {
         try {
-            log.debug("Creating card for token: {}", token);
+            log.info("=== CARD CREATION STARTED ===");
+            log.debug("Creating card for token: {}", token.substring(0, Math.min(10, token.length())));
 
             // Validate user and get user information
             UserValidationResponse userValidation = userServiceClient
@@ -74,7 +58,29 @@ public class CardServiceImpl implements CardService {
 
             log.debug("User validation successful for userId: {}", userValidation.getId());
 
-            // Generate unique card number
+            // PREVENT DUPLICATE CREATION - Check for recent cards created by this user
+            List<Card> recentCards = cardRepository.findByUserIdAndCreatedAtAfter(
+                    userValidation.getId(),
+                    LocalDateTime.now().minusMinutes(2) // Check last 2 minutes
+            );
+
+            if (!recentCards.isEmpty()) {
+                log.warn("Preventing duplicate card creation for user: {}. Found {} recent cards",
+                        userValidation.getId(), recentCards.size());
+                // Return the most recent card instead of creating a new one
+                Card mostRecentCard = recentCards.stream()
+                        .max((c1, c2) -> c1.getCreatedAt().compareTo(c2.getCreatedAt()))
+                        .orElse(recentCards.get(0));
+                return mapToDto(mostRecentCard);
+            }
+
+            // Check card limits per user
+            List<Card> existingCards = cardRepository.findByUserId(userValidation.getId());
+            if (existingCards.size() >= 10) { // Limit to 10 cards per user
+                throw new RuntimeException("User already has maximum number of cards (10)");
+            }
+
+            // Generate unique card number (16 digits)
             String cardNum = generateUniqueCardNumber();
 
             // Create card entity
@@ -94,12 +100,12 @@ public class CardServiceImpl implements CardService {
             }
 
             Card savedCard = cardRepository.save(card);
-            log.debug("Card created successfully with ID: {} for user: {}",
+            log.info("=== CARD CREATION COMPLETED - ID: {} for user: {} ===",
                     savedCard.getId(), savedCard.getUserId());
             return mapToDto(savedCard);
 
         } catch (Exception e) {
-            log.error("Failed to create card", e);
+            log.error("=== CARD CREATION FAILED ===", e);
             throw new RuntimeException("Failed to create card: " + e.getMessage(), e);
         }
     }
@@ -140,14 +146,14 @@ public class CardServiceImpl implements CardService {
     public CardDto updateCard(Long id, CardDto cardDto) {
         Card existingCard = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         existingCard.setCardHolderName(cardDto.getCardHolderName());
         existingCard.setExpiryMonth(cardDto.getExpiryMonth());
         existingCard.setExpiryYear(cardDto.getExpiryYear());
         existingCard.setCardType(cardDto.getCardType());
         existingCard.setCreditLimit(cardDto.getCreditLimit());
         existingCard.setUpdatedAt(LocalDateTime.now());
-        
+
         Card updatedCard = cardRepository.save(existingCard);
         return mapToDto(updatedCard);
     }
@@ -164,14 +170,14 @@ public class CardServiceImpl implements CardService {
     public CardDto updateCardStatus(Long id, String status) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         if (!status.matches("^(ACTIVE|BLOCKED|EXPIRED)$")) {
             throw new InvalidCardStatusException("Invalid card status: " + status);
         }
-        
+
         card.setCardStatus(status);
         card.setUpdatedAt(LocalDateTime.now());
-        
+
         Card updatedCard = cardRepository.save(card);
         return mapToDto(updatedCard);
     }
@@ -180,11 +186,11 @@ public class CardServiceImpl implements CardService {
     public CardDto updateBalance(Long id, BigDecimal amount, String operation) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         if (!"ACTIVE".equals(card.getCardStatus())) {
             throw new InvalidCardStatusException("Cannot update balance for inactive card");
         }
-        
+
         BigDecimal newBalance;
         if ("DEBIT".equalsIgnoreCase(operation)) {
             if (card.getAvailableBalance().compareTo(amount) < 0) {
@@ -195,17 +201,17 @@ public class CardServiceImpl implements CardService {
         } else if ("CREDIT".equalsIgnoreCase(operation)) {
             newBalance = card.getCurrentBalance().subtract(amount);
             card.setAvailableBalance(card.getAvailableBalance().add(amount));
-            
+
             if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
                 newBalance = BigDecimal.ZERO;
             }
         } else {
             throw new IllegalArgumentException("Invalid operation: " + operation);
         }
-        
+
         card.setCurrentBalance(newBalance);
         card.setUpdatedAt(LocalDateTime.now());
-        
+
         Card updatedCard = cardRepository.save(card);
         return mapToDto(updatedCard);
     }
@@ -225,28 +231,28 @@ public class CardServiceImpl implements CardService {
     public boolean isCardExpired(Long id) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         LocalDateTime now = LocalDateTime.now();
-        return now.getYear() > card.getExpiryYear() || 
-               (now.getYear() == card.getExpiryYear() && now.getMonthValue() > card.getExpiryMonth());
+        return now.getYear() > card.getExpiryYear() ||
+                (now.getYear() == card.getExpiryYear() && now.getMonthValue() > card.getExpiryMonth());
     }
 
     @Override
     public CardDto increaseLimit(Long id, BigDecimal amount) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be positive");
         }
-        
+
         BigDecimal newLimit = card.getCreditLimit().add(amount);
         BigDecimal balanceIncrease = amount;
-        
+
         card.setCreditLimit(newLimit);
         card.setAvailableBalance(card.getAvailableBalance().add(balanceIncrease));
         card.setUpdatedAt(LocalDateTime.now());
-        
+
         Card updatedCard = cardRepository.save(card);
         return mapToDto(updatedCard);
     }
@@ -255,23 +261,23 @@ public class CardServiceImpl implements CardService {
     public CardDto decreaseLimit(Long id, BigDecimal amount) {
         Card card = cardRepository.findById(id)
                 .orElseThrow(() -> new CardNotFoundException("Card not found with id: " + id));
-        
+
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Amount must be positive");
         }
-        
+
         BigDecimal newLimit = card.getCreditLimit().subtract(amount);
-        
+
         if (newLimit.compareTo(card.getCurrentBalance()) < 0) {
             throw new IllegalArgumentException("Cannot decrease limit below current balance");
         }
-        
+
         BigDecimal balanceDecrease = amount;
-        
+
         card.setCreditLimit(newLimit);
         card.setAvailableBalance(card.getAvailableBalance().subtract(balanceDecrease));
         card.setUpdatedAt(LocalDateTime.now());
-        
+
         Card updatedCard = cardRepository.save(card);
         return mapToDto(updatedCard);
     }
@@ -311,11 +317,12 @@ public class CardServiceImpl implements CardService {
         return cardDto;
     }
 
+    // FIXED: Generate proper 16-digit card number
     private String generateRandomCardNumber() {
         StringBuilder cardNumber = new StringBuilder();
 
-
-        for (int i = 1; i < 10; i++) {
+        // Generate 16 digits for a proper credit card number
+        for (int i = 0; i < 16; i++) {
             cardNumber.append(random.nextInt(10));
         }
 
@@ -328,12 +335,11 @@ public class CardServiceImpl implements CardService {
         do {
             cardNumber = generateRandomCardNumber();
             attempts++;
-            if (attempts > 10) {
-                throw new RuntimeException("Unable to generate unique card number after 10 attempts");
+            if (attempts > 100) {
+                throw new RuntimeException("Unable to generate unique card number after 100 attempts");
             }
-        } while (cardRepository.findByCardNumber(cardNumber).isPresent());
+        } while (cardRepository.existsByCardNumber(cardNumber));
 
         return cardNumber;
     }
-
 }
