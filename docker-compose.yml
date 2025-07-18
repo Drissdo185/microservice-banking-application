@@ -1,0 +1,253 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Databases
+  user-db:
+    image: postgres:15
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+      - ./user-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-network
+
+  cards-db:
+    image: postgres:15
+    container_name: cards-db
+    environment:
+      POSTGRES_DB: card_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - cards_db_data:/var/lib/postgresql/data
+      - ./card-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d card_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-network
+
+  accounts-db:
+    image: postgres:15
+    container_name: accounts-db
+    environment:
+      POSTGRES_DB: accounts_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - accounts_db_data:/var/lib/postgresql/data
+      - ./account-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d accounts_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-network
+
+  loans-db:
+    image: postgres:15
+    container_name: loans-db
+    environment:
+      POSTGRES_DB: loan_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - loans_db_data:/var/lib/postgresql/data
+      - ./loan-service/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d loan_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - banking-network
+
+  # Eureka Server
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+    # healthcheck disabled due to network connectivity issues
+    # test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+    networks:
+      - banking-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/user_service_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+      - JWT_EXPIRATION=86400000
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    # healthcheck disabled due to network connectivity issues
+    networks:
+      - banking-network
+
+  # Card Service
+  card-service:
+    build:
+      context: ./card-service
+      dockerfile: Dockerfile
+    container_name: card-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://cards-db:5432/card_service_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - USER_SERVICE_URL=http://user-service:8081
+      - JWT_SECRET=e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+    depends_on:
+      cards-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    # healthcheck disabled due to network connectivity issues
+    networks:
+      - banking-network
+
+  # Account Service
+  account-service:
+    build:
+      context: ./account-service
+      dockerfile: Dockerfile
+    container_name: account-service
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://accounts-db:5432/accounts_service_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - USER_SERVICE_URL=http://user-service:8081
+      - JWT_SECRET=e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+    depends_on:
+      accounts-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    # healthcheck disabled due to network connectivity issues
+    networks:
+      - banking-network
+
+  # Loan Service
+  loan-service:
+    build:
+      context: ./loan-service
+      dockerfile: Dockerfile
+    container_name: loan-service
+    ports:
+      - "8100:8100"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://loans-db:5432/loan_service_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - USER_SERVICE_URL=http://user-service:8081
+      - JWT_SECRET=e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+    depends_on:
+      loans-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    # healthcheck disabled due to network connectivity issues
+    networks:
+      - banking-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=e9fa4786dadbdf5913ca849bc146e242f7fe646694b40ea3c88163461468ef31
+    depends_on:
+      - eureka-server
+      - user-service
+      - card-service
+      - account-service
+      - loan-service
+    # healthcheck disabled due to network connectivity issues
+    networks:
+      - banking-network
+
+volumes:
+  user_db_data:
+  cards_db_data:
+  accounts_db_data:
+  loans_db_data:
+  redis_data:
+
+networks:
+  banking-network:
+    driver: bridge
